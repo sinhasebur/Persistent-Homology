@@ -1,0 +1,54 @@
+ACTUAL IMPLEMENTATIONS FOR CONTRAST
+
+Ripser
+https://github.com/Ripser/ripser
+
+Gudhi
+https://github.com/GUDHI/gudhi-devel/tree/master/src
+(nicest but a bit too nice for now)
+
+
+IBM matilda
+https://github.com/IBM/matilda
+
+
+
+Problem 1. During Vietoris Rips fitration what is the maximum radius i should consider?
+
+- in my naive attempt i simply took the max 0-simplex length, beyond this topological features will never change.
+IBM implements persistence module algorithm in their "Matilda" software where they take the smallest radius of the enclosing data cloud to avoid computational cost expansion at the cost of avoiding insignificant data.
+    https://www.nature.com/articles/s41598-025-12189-y
+
+
+
+in ripser, the same thing
+
+value_t enclosing_radius = std::numeric_limits<value_t>::infinity();
+if (threshold == std::numeric_limits<value_t>::max()) {
+    for (size_t i = 0; i < dist.size(); ++i) {
+        value_t r_i = -std::numeric_limits<value_t>::infinity();
+        for (size_t j = 0; j < dist.size(); ++j)
+            r_i = std::max(r_i, dist(i, j));
+        enclosing_radius = std::min(enclosing_radius, r_i);
+    }
+}
+
+Gudhi also uses Alpha complex- better (study later)
+
+Problem 2: How many times to calculate distance? If i really do memoization what to remember?
+
+- I did the calculation for all combinations each time. Generate and keep the entire boundary matrix in a 2D grid. Extremely space inefficient
+
+A easy space optimization the paper suggests - a 2-d simplex will always have 2 boundary elements, we can just remember those, vastly cutting cost.
+
+In Ripser
+    they dont generate the full matrix, they find distances on demand
+
+    https://arxiv.org/html/2411.05495v2
+
+ripser used robinhood hashing for lookup in 2^n space
+
+
+
+Problem 3: how do i get actual Betti numbers?
+
