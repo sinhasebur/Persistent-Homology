@@ -33,7 +33,7 @@ public class VietorisRips {
                     List <Integer> name = getSet(2,Arrays.asList(i,j));
                     if(!names.add(name)) {continue; }
 
-                    System.out.println("took: "+i+j);
+                    System.out.println("took: "+ "'"+i+"'"+j+"'");
                     fakeId++;
 
                     double distanceAsBirthTime = pointUtils.getMaxDistance( Arrays.asList(points.get(i), points.get(j)));
@@ -59,7 +59,7 @@ public class VietorisRips {
                         if(names.contains(name)) {continue; }
                         else names.add(name);
 
-                        System.out.println("took: "+i+j+k);
+                        System.out.println("took: "+"'"+i+"'"+j+"'"+k);
                         fakeId++;
 
                         List<Point> consideredPoints = new ArrayList<>(); consideredPoints.add(points.get(i)); consideredPoints.add(points.get(j)); consideredPoints.add(points.get(k));
@@ -85,7 +85,7 @@ public class VietorisRips {
                             if(names.contains(name)) {continue; }
                             else names.add(name);
 
-                            System.out.println("took: "+ w+i+j+k);
+                            System.out.println("took: "+"'"+ w+"'"+i+"'"+j+"'"+k);
                             //System.out.println(" name was "+ name[0]+name[1]+name[2]+name[3]+" .");
                             fakeId++;
 

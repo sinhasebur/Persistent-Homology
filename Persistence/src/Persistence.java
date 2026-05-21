@@ -24,11 +24,18 @@ class Persistence {
             while(true){
                 System.out.print("         ");
                 if(low[i]==-1){
-                    Homology h = new Homology( BoundaryMatrixUtils.getDimensionFromID(i), BoundaryMatrixUtils.getBirthTimeFromID(i) ) ;
+
+                    int dimension = BoundaryMatrixUtils.getDimensionFromID(i);
+//                    if(dimension<=Homology.getConsiderUpto()){
+//                        break;
+//                    }
+
+                    Homology h = new Homology( dimension, BoundaryMatrixUtils.getBirthTimeFromID(i) ) ;
                     persistence.add(h);
                     idToH.put(i, persistence.size()-1 );
                     System.out.println("Line started for H"+  BoundaryMatrixUtils.getDimensionFromID(i));
                     break;
+
                 }
                 else if( set.contains(low[i]) ){
 //                    System.out.println("here");
@@ -84,9 +91,40 @@ class Persistence {
 
     public void getInfo(List <Homology> h){
 
+        int [] bettiNumbers = new int [4];
+        List < double [] > persistence = new ArrayList <>();
+
+        System.out.println("Betti Numbers Probably but not really");
         for (Homology h1 : h){
+            int dimension = h1.getDimension();
             System.out.println(h1.toString());
+            if(h1.getDeathTime()==-1){
+                bettiNumbers[dimension]++;
+            }
+            else if (dimension<Homology.getConsiderUpto()){
+                double [] temp = new double[2];
+                temp[1]=h1.getPersistence(); temp[0]= dimension;
+                if(temp[1]>1e-9){
+                    persistence.add(temp);
+                }
+
+            }
+
         }
+
+        for(int i=0;i<Homology.getConsiderUpto();i++){
+            System.out.println("H"+i+" "+bettiNumbers[i]);
+        }
+
+        persistence.sort(Comparator.comparingDouble((double[] a) -> a[0])
+                .thenComparingDouble(a -> a[1])
+                .reversed());
+
+        System.out.println("Important Features");
+        for(int i=0;i<5;i++){
+            System.out.println("H"+persistence.get(i)[0]+" persists for "+ persistence.get(i)[1]);
+        }
+
     }
 
 }

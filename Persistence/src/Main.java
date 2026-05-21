@@ -14,6 +14,7 @@ public class Main {
         System.out.println("h to consider upto? ");
         int simpD = sc.nextInt();
         System.out.println("considered upto "+ simpD);
+        Homology.setConsiderUpto(simpD);
 
         System.out.println("Dimension to consider ? ");
         int dim = sc.nextInt();
@@ -27,7 +28,7 @@ public class Main {
 
         //filter
         List<Simplex> filtration = filtrationComplex.filter(points);
-//
+
 //        //build Matrix
         BoundaryMatrixUtils bm = BoundaryMatrixUtils.getInstance(filtration);
         int [][] boundaryMatrix = bm.buildMatrix();

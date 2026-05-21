@@ -70,7 +70,7 @@ public class BoundaryMatrixUtils {
         for(int i=0;i<matrix.length;i++){
             List <Integer> name = ID_ToName.get(i);
 
-            for(int j=0;j<name.size();j++){System.out.print(name.get(j));}
+            for(int j=0;j<name.size();j++){System.out.print("'"+name.get(j)+ "'" );}
 
             System.out.print("  has : ");
             for(int j=0;j<matrix[0].length;j++){
