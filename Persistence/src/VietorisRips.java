@@ -1,116 +1,152 @@
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public class VietorisRips {
 
-    private double radiusMax;
+    private double maxSimplices=3;
+    private PointUtils pointUtils;
 
-    public static List<Simplex> filter(List<Point> points, double radiusMax) {
+    public VietorisRips(double maxSimplices){
+        this.maxSimplices=maxSimplices;
+        pointUtils= PointUtils.getInstance();
+    }
+
+    public  List<Simplex> filter(List<Point> points) {
 
         int n = points.size();
-
         List<Simplex> filtration = new ArrayList<>();
 
-        //adding 0-simplices (vertices)
-        for (int i = 0; i < n; i++) {
-            List<Integer> temp = new ArrayList<>();
-            temp.add(i);
-            filtration.add(new Simplex(0, 0.0, temp));
-        }
-
-        //adding 1-simplices (edges)
-        for (int i = 0; i < n; i++) {
-            for (int j = i + 1; j < n; j++) {
-                double distanceAsBirthTime = Point.distance(points.get(i), points.get(j));
-                //if (distanceAsBirthTime < radiusMax) {
-                List<Integer> temp = new ArrayList<>();
-                temp.add(i);
-                temp.add(j);
-                filtration.add(new Simplex(1, distanceAsBirthTime, temp));
-                //}
-                radiusMax = Math.max(radiusMax, distanceAsBirthTime);
+        if(maxSimplices>=0){
+            for (int i = 0; i < n; i++) {
+                List <Integer> name= new ArrayList<>();
+                name.add(i);
+                filtration.add(new Simplex(0, 0.0, i, name));
             }
         }
 
-        //radiusMax = Point.getMaxDistance();
-        Point.setMaxDistance(radiusMax);
-        System.out.println("Max radius: " + radiusMax);
+        if(maxSimplices>=1){
+            int fakeId=0;
+            Set < List <Integer> > names= new HashSet<>();
+            for (int i = 0; i < n; i++) {
+                for (int j = i + 1; j < n; j++) {
+                    if(anyEqual(Arrays.asList(i,j))) continue;
+
+                    List <Integer> name = getSet(2,Arrays.asList(i,j));
+                    if(!names.add(name)) {continue; }
+
+                    System.out.println("took: "+i+j);
+                    fakeId++;
+
+                    double distanceAsBirthTime = pointUtils.getMaxDistance( Arrays.asList(points.get(i), points.get(j)));
+
+                    filtration.add(new Simplex(1, distanceAsBirthTime, fakeId, name));
+                }
+            }
+        }
 
 
-        //adding 2-simplicies (triangles)
-        for (int i = 0; i < n; i++) {
-            for (int j = i + 1; j < n; j++) {
-                for (int k = j + 1; k < n; k++) {
-                    double distance1 = Point.distance(points.get(i), points.get(j));
-                    double distance2 = Point.distance(points.get(k), points.get(j));
-                    double distance3 = Point.distance(points.get(i), points.get(k));
-                    if (distance1 <= radiusMax && distance2 <= radiusMax && distance3 <= radiusMax) {
-                        double birthtime = Math.max(distance1, Math.max(distance2, distance3));
+        if(maxSimplices>=2){
+            int fakeId=0;
+            Set < List <Integer> > names = new HashSet<>();
 
-                        filtration.add(new Simplex(2, birthtime, Arrays.asList(i, j, k)));
-                        ;
+            for (int i = 0; i < n; i++) {
+                for (int j = i + 1; j < n; j++) {
+                    for (int k = j + 1; k < n; k++) {
 
+                        //System.out.print("checking: "+i+j+k+ "   ");
+                        if(anyEqual(Arrays.asList(i,j,k))) { continue;}
 
+                        List <Integer> name = getSet(3,Arrays.asList(i,j,k));
+                        if(names.contains(name)) {continue; }
+                        else names.add(name);
+
+                        System.out.println("took: "+i+j+k);
+                        fakeId++;
+
+                        List<Point> consideredPoints = new ArrayList<>(); consideredPoints.add(points.get(i)); consideredPoints.add(points.get(j)); consideredPoints.add(points.get(k));
+                        double birthtime = pointUtils.getMaxDistance(consideredPoints);
+
+                        filtration.add(new Simplex(2, birthtime, fakeId, name));
                     }
                 }
             }
         }
-        // 3-simplices added only to kill triangles
+    
+        if(maxSimplices>=3){
+            int fakeId=0;
+            Set <List <Integer> > names = new HashSet<>();
 
-        //adding 2-simplicies (triangles)
-//        for (int w = 0; w < n; w++){
-//            for (int i = 0; i < n; i++) {
-//                for (int j = i + 1; j < n; j++) {
-//                    for (int k = j + 1; k < n; k++) {
-//                        double distance1 = Point.distance(points.get(i), points.get(j));
-//                        double distance2 = Point.distance(points.get(k), points.get(j));
-//                        double distance3 = Point.distance(points.get(i), points.get(k));
-//                        double distance4 = Point.distance(points.get(i), points.get(w));
-//                        double distance5 = Point.distance(points.get(j), points.get(w));
-//                        double distance6 = Point.distance(points.get(k), points.get(w));
-//                        if (distance1 <= radiusMax && distance2 <= radiusMax && distance3 <= radiusMax &&  distance4 <= radiusMax
-//                        &&  distance5 <= radiusMax && distance6 <= radiusMax) {
-//                            double birthtime = Math.max(Math.max(distance1, Math.max(distance2, distance3)), Math.max(distance4, Math.max(distance5, distance6)));
-//
-//                            filtration.add(new Simplex(3, birthtime, Arrays.asList(w,i, j, k)));
-//
-//                        }
-//                    }
-//                }
-//            }
+            for (int w = 0; w < n; w++){
+                for (int i = 0; i < n; i++) {
+                    for (int j = i + 1; j < n; j++) {
+                        for (int k = j + 1; k < n; k++) {
+                            if(anyEqual(Arrays.asList(i,j,k,w))) continue;
 
-//        }
+                            List <Integer> name = getSet(4,Arrays.asList(w,i,j,k));
+                            if(names.contains(name)) {continue; }
+                            else names.add(name);
+
+                            System.out.println("took: "+ w+i+j+k);
+                            //System.out.println(" name was "+ name[0]+name[1]+name[2]+name[3]+" .");
+                            fakeId++;
+
+                            List<Point> consideredPoints = new ArrayList<>();
+                            consideredPoints.add(points.get(i)); consideredPoints.add(points.get(j)); consideredPoints.add(points.get(k)); consideredPoints.add(points.get(w));
+                            double birthtime = pointUtils.getMaxDistance(consideredPoints);
+
+                            filtration.add(new Simplex(3, birthtime, fakeId, name));
+                        }
+                    }
+                }
+
+            }
+        }
 
         //sorting first by time, then dimension
+
         filtration.sort((s1, s2) -> {
-            if (Math.abs(s1.birthTime - s2.birthTime) > 1e-9) {
-                return Double.compare(s1.birthTime, s2.birthTime);
+            if (Math.abs(s1.getBirthTime() - s2.getBirthTime()) > 1e-9) {
+                return Double.compare(s1.getBirthTime(), s2.getBirthTime());
             }
-            if (s1.dimension != s2.dimension) {
-                return Integer.compare(s1.dimension, s2.dimension);
+            if (s1.getDimension() != s2.getDimension()) {
+                return Integer.compare(s1.getDimension(), s2.getDimension());
             }
-            // Tie-breaker: Lexicographical compare of vertex lists
-            for (int i = 0; i < s1.vertices.size(); i++) {
-                if (!s1.vertices.get(i).equals(s2.vertices.get(i))) {
-                    return Integer.compare(s1.vertices.get(i), s2.vertices.get(i));
-                }
+            // Tie-breaker: fakeid
+            if (s1.getFakeId() != s2.getFakeId()) {
+                return Integer.compare(s1.getFakeId(), s2.getFakeId());
             }
+            System.out.println("sorting isssues occured btw sadf");
             return 0;
         });
 
 
         //printing the filtration list
         System.out.println("Filtration done, took " + filtration.size() +" simplicies");
-//        for (int i = 0; i < filtration.size(); i++) {
-//            System.out.println("Index "+ i + " : "+ filtration.get(i));
-//        }
-//        System.out.println(" ");
+        for (int i = 0; i < filtration.size(); i++) {
+            System.out.println("Index "+ i + " : "+ filtration.get(i));
+        }
+        System.out.println(" ");
         return filtration;
     }
 
+    Boolean anyEqual(List<Integer> a){
+        Set<Integer> set = new HashSet<>();
+        for (int i = 0; i < a.size(); i++) {
+            set.add(a.get(i));
+        }
+        if (set.size() != a.size()) {
+            return true;
+        }
+        return false;
+    }
 
+    List <Integer> getSet(int n, List <Integer> list){
+        List <Integer> s= new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            s.add(list.get(i));
+        }
+        Collections.sort(s);
+        return s;
+    }
 
 
 }

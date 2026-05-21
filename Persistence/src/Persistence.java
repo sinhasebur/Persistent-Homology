@@ -1,133 +1,92 @@
-import javax.swing.*;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+
+import static java.lang.Math.max;
 
 class Persistence {
+    private Map <Integer,Integer> idToH = new HashMap<>();
+    private Map <Integer,Integer> lowToLowCreator = new HashMap<>();
 
-    static int [] holes=new int [10];
-    static double [] holesMaxPersistence=new double [10];
+    public List <Homology> reduce(int [][] boundaryMatrix){
 
-    public static void reduce(int[][] B, List<Simplex> filtration) {
-        int n = B.length;
-        int[] pivotToColumn=new int[n];
-        Arrays.fill(pivotToColumn,-1);
-        Arrays.fill(holes,0);
-        Arrays.fill(holesMaxPersistence,0);
+        int n= BoundaryMatrixUtils.getSize();
+        List <Homology> persistence = new ArrayList <>();
 
-        for (int i = 0; i < n; i++) {
-            while (true) {
-                int low = getLow(B, i);
-                if (low == -1)
-                    break; //this is a birth, recorded by -1
-                int columnWithSameLow = pivotToColumn[low];
-                if (columnWithSameLow != -1) {
-                    xorColumn(B, columnWithSameLow, i);
-                } else {
-                    // index 'low' is born and index j is kills
-                    pivotToColumn[low] = i;
-                    printPair(filtration, low, i);
+        int [] low = new int [n];
+
+        for(int i=0;i<n;i++){
+            low[i]=setLow(boundaryMatrix, i);
+        }
+        Set<Integer> set = new HashSet<Integer>();
+
+        for(int i=0;i<n;i++){
+            System.out.println("For "+ BoundaryMatrixUtils.getNameFromID(i) );
+
+            while(true){
+                System.out.print("         ");
+                if(low[i]==-1){
+                    Homology h = new Homology( BoundaryMatrixUtils.getDimensionFromID(i), BoundaryMatrixUtils.getBirthTimeFromID(i) ) ;
+                    persistence.add(h);
+                    idToH.put(i, persistence.size()-1 );
+                    System.out.println("Line started for H"+  BoundaryMatrixUtils.getDimensionFromID(i));
+                    break;
+                }
+                else if( set.contains(low[i]) ){
+//                    System.out.println("here");
+//                    xorColumns( boundaryMatrix,i,lowToLowCreator.get(low[i]) );
+//                    low[i]=setLow(boundaryMatrix, i);
+//                    System.out.println("low of" + i + "is not unique "+low[i]+", xoring with "+ BoundaryMatrixUtils.getNameFromID(lowToLowCreator.get(low[i]) ));
+//                    System.out.println("Got new low"+ low[i]);
+                    int sameLow = low[i];
+                    int previousholder = lowToLowCreator.get(sameLow);
+
+                    xorColumns(boundaryMatrix, i, previousholder);
+                    low[i] = setLow(boundaryMatrix, i);
+
+                    System.out.println("low of " + i + " was duplicate at " + sameLow + ", xoring with " + BoundaryMatrixUtils.getNameFromID(previousholder));
+
+                    System.out.println("Got new low " + low[i]);
+                }
+                else{
+                    set.add(low[i]);
+                    lowToLowCreator.put(low[i],i);
+                    //System.out.println("wanna kill "+ )
+                    persistence.get( idToH.get( low[i] ) ).setDeathTime( BoundaryMatrixUtils.getBirthTimeFromID(i) ) ;
+                    System.out.println("Got new low"+ low[i]);
+                    System.out.println("Line killed for "+ BoundaryMatrixUtils.getDimensionFromID(low [i]));
                     break;
                 }
             }
+            System.out.println("\n");
+            BoundaryMatrixUtils.printMatrix(boundaryMatrix);
         }
 
-        //looping through to find infinite persistence
+        return persistence;
+    }
 
-        //recording deaths
-        int [] killed = new int [n];
-        Arrays.fill(killed,0);
-
-        for (int i = 0; i < n; i++){
-            int low = getLow(B, i);
-            if(low != -1){
-                killed[low]=1;
-                //System.out.println(killed[i]+" was killed lmao");
+    private int setLow(int [][] boundaryMatrix, int index){
+        int n= BoundaryMatrixUtils.getSize();
+        int low=-1;
+        for (int j=0;j<n;j++){
+            if(boundaryMatrix[index][j]==1){
+                low=max(low, j);
             }
         }
-
-        for (int i = 0; i < n; i++){
-            int low = getLow(B, i);
-            int died= killed[i];
-
-            if( (low == -1) && died==0){
-                printInfinite(filtration,i);
-            }
-        }
-        for(int i=0; i<10; i++){
-            if(holesMaxPersistence[i] != 0){
-                //System.out.println(holesMaxPersistence[i] + " vs " + Point.getMaxDistance());
-                if(holesMaxPersistence[i] - Point.getMaxDistance() < 1e-8){
-                    //System.out.println("H" + i + " hole present");
-                    holes[i]++;
-                }
-                else
-                    System.out.println("Hole of " + i + " existed for " + holesMaxPersistence[i]);
-            }
-        }
-        //print betti numbers
-        for(int i=0;i<10;i++){
-            System.out.println("H"+i+" "+holes[i]);
-        }
-
+        return low;
     }
 
-    private static int getLow(int[][] B, int col) {
-        for(int row=B.length-1;row>=0;row--) {
-            if(B[row][col] == 1)
-                return row;
-        }
-        return -1;
-    }
+    private void xorColumns(int [][] boundaryMatrix,int index,Integer previousLowHolder){
+        int n= BoundaryMatrixUtils.getSize();
 
-    private static void xorColumn(int[][] B, int source, int destination) {
-        for(int row=B.length-1;row>=0;row--) {
-            B[row][destination] ^= B[row][source];
+        for (int j=0;j<n;j++){
+                boundaryMatrix[index][j]= boundaryMatrix[index][j]^ boundaryMatrix[previousLowHolder][j];
         }
     }
 
+    public void getInfo(List <Homology> h){
 
-    private static void printPair(List<Simplex> filtration, int birthIndex, int deathIndex) {
-        Simplex birth = filtration.get(birthIndex);
-        Simplex death = filtration.get(deathIndex);
-
-        // The dimension of the feature is always the dimension of the simplex that CREATED it.
-        int dimension = birth.dimension;
-
-        double birthTime = birth.birthTime;
-        double deathTime = death.birthTime;
-        double persistence = deathTime - birthTime;
-        if(deathTime - Point.getMaxDistance() > 1e-6){
-             holesMaxPersistence[dimension] = Point.getMaxDistance();
-        }
-//        if (persistence > 1e-9) {
-//            System.out.printf("Dimension  is %d, Age is [%.4f, %.4f), Persistence: %.4f\n",
-//                    dimension, birthTime, deathTime, persistence);
-//
-        if(persistence> holesMaxPersistence[dimension]) {
-            holesMaxPersistence[dimension] = persistence;
+        for (Homology h1 : h){
+            System.out.println(h1.toString());
         }
     }
-    private static void printInfinite(List<Simplex> filtration, int birthIndex) {
-        Simplex birth = filtration.get(birthIndex);
 
-        // The dimension of the feature is always the dimension of the simplex that CREATED it.
-       int dimension = birth.dimension;
-
-        if( dimension != 0) {
-            //System.out.println(dimension +"-D simplex persists");
-        }
-//       if(  dimension != 0){
-//           //System.out.println("H"+ (dimension) +" hole present");
-//           holes[dimension]++;
-//       }
-      holes[dimension]++;
-//        double birthTime = birth.birthTime;
-        //double persistence = doubleMax;
-
-        //if (persistence > 1e-9) {
-//        System.out.printf("Dimension  is %d, Age is [%.4f, inf), Persistence: inf\n",
-//                dimension, birthTime );
-//        //}
-
-    }
 }
